@@ -11,6 +11,8 @@ class Contact
   # @param email [String] The contact's email address
   def initialize(name, email)
     # TODO: Assign parameter values to instance variables.
+      @name = name
+      @email = email
   end
 
   # Provides functionality for managing contacts in the csv file.
@@ -20,6 +22,18 @@ class Contact
     # @return [Array<Contact>] Array of Contact objects
     def all
       # TODO: Return an Array of Contact instances made from the data in 'contacts.csv'.
+
+      contacts = []
+
+      File.open('contacts.csv','r') do |file|
+        while !file.eof?
+          contact_line = file.readline.split(',')
+          contacts.push(Contact.new(contact_line[0],contact_line[1].chomp))
+        end
+      end
+
+      contacts
+
     end
 
     # Creates a new contact, adding it to the csv file, returning the new contact.
