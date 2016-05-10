@@ -1,9 +1,19 @@
 require 'byebug'
 require 'csv'
+require 'pg'
 
 # Represents a person in an address book.
 # The ContactList class will work with Contact objects instead of interacting with the CSV file directly
 class Contact
+
+  @@conn = PG.connect(
+    host: 'localhost',
+    dbname: 'postgres',
+    user: 'development',
+    password: 'development'
+  )
+
+
 
   FILE_NAME = 'contacts.csv'
 
@@ -18,53 +28,31 @@ class Contact
       @name = name
       @email = email
   end
-
-  # Provides functionality for managing contacts in the csv file.
+  
   class << self
 
+    def all 
+      @@conn.exec('SELECT * FROM contacts;') do |results|
+        results.map do |contact|
+          Contact.new(contact["id"].to_i,contact["name"],contact["email"])
+        end
+      end 
+    end
 
-    # Opens 'contacts.csv' and creates a Contact object for each line in the file (aka each contact).
-    # @return [Array<Contact>] Array of Contact objects
-    def all
-      # TODO: Return an Array of Contact instances made from the data in 'contacts.csv'.
-
-      contacts = []
-
-      CSV.foreach(FILE_NAME) do |row|
-        contacts.push(Contact.new(row[0],row[1],row[2]))
+    def save(name,email)
+      @@conn.exec_params("INSERT INTO contacts (name, email) VALUES ($1, $2) RETURNING id;", [name, email]) do |results|
+        results[0]["id"]
       end
-
-      contacts
 
     end
 
-    # Creates a new contact, adding it to the csv file, returning the new contact.
-    # @param name [String] the new contact's name
-    # @param email [String] the contact's email
     def create(name, email)
-      # TODO: Instantiate a Contact, add its data to the 'contacts.csv' file, and return it.
-      
-      id = IO.readlines(FILE_NAME).last(1)[0].split(',')[0].to_i + 1
-      
-      contact = Contact.new(id.to_s, name, email)
-      
-      row_array = [contact.id, contact.name, contact.email]
-
-      CSV.open(FILE_NAME, 'a') do |csv_object|
-      #customers.array.each do |row_array|
-          csv_object << row_array
-        
-      end
+      id = save(name,email)
+      Contact.new(id.to_i, name, email)    
     end
     
-    # Find the Contact in the 'contacts.csv' file with the matching id.
-    # @param id [Integer] the contact id
-    # @return [Contact, nil] the contact with the specified id. If no contact has the id, returns nil.
     def find(id)
-      # TODO: Find the Contact in the 'contacts.csv' file with the matching id.
-      CSV.foreach(FILE_NAME, converters: :numeric) do |row|
-        return row if row[0] == id
-      end
+    
     end
 
     # Search for contacts by either name or email.
