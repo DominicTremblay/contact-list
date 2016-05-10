@@ -2,8 +2,6 @@ require 'byebug'
 require 'csv'
 require 'pg'
 
-# Represents a person in an address book.
-# The ContactList class will work with Contact objects instead of interacting with the CSV file directly
 class Contact
 
   @@conn = PG.connect(
@@ -15,11 +13,7 @@ class Contact
 
   attr_accessor :id, :name, :email
   
-  # Creates a new contact object
-  # @param name [String] The contact's name
-  # @param email [String] The contact's email address
   def initialize(id, name, email)
-    # TODO: Assign parameter values to instance variables.
       @id = id
       @name = name
       @email = email
