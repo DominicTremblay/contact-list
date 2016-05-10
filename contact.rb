@@ -13,10 +13,6 @@ class Contact
     password: 'development'
   )
 
-
-
-  FILE_NAME = 'contacts.csv'
-
   attr_accessor :id, :name, :email
   
   # Creates a new contact object
@@ -32,7 +28,7 @@ class Contact
   class << self
 
     def all 
-      @@conn.exec('SELECT * FROM contacts;') do |results|
+      @@conn.exec('SELECT * FROM contacts ORDER BY id;') do |results|
         results.map do |contact|
           Contact.new(contact["id"].to_i,contact["name"],contact["email"])
         end
@@ -40,10 +36,15 @@ class Contact
     end
 
     def save(name,email)
+
       @@conn.exec_params("INSERT INTO contacts (name, email) VALUES ($1, $2) RETURNING id;", [name, email]) do |results|
         results[0]["id"]
       end
+    end
 
+    def update(contact, new_name, new_email)
+      id = contact[0].id.to_i
+      @@conn.exec_params("UPDATE contacts SET name=$1, email=$2 WHERE id=$3;", [new_name, new_email, id])
     end
 
     def create(name, email)
@@ -52,26 +53,27 @@ class Contact
     end
     
     def find(id)
-    
-    end
-
-    # Search for contacts by either name or email.
-    # @param term [String] the name fragment or email fragment to search for
-    # @return [Array<Contact>] Array of Contact objects.
-    def search(term)
-      # TODO: Select the Contact instances from the 'contacts.csv' file whose name or email attributes contain the search term.
-      contacts = []
-      CSV.foreach(FILE_NAME) do |row| 
-        row.each do |cell| 
-          if /#{term}/.match(cell) 
-            contacts.push(Contact.new(row[0], row[1], row[2]))
-          end
-        end
+      begin
+        contact = @@conn.exec_params('SELECT * from contacts WHERE id=$1::int',[id])
+        [Contact.new(contact[0]["id"], contact[0]["name"],contact[0]["email"])]        
+      rescue
+        nil
       end
-      contacts
     end
 
+    def search(term)
+      contacts = []
+        @@conn.exec_params("SELECT * FROM contacts WHERE NAME ILIKE $1",["%#{term}%"]) do |results|
+            results.map do |contact|      
+              contacts.push(Contact.new(contact["id"].to_i,contact["name"],contact["email"]))
+            end
+        end
+      contacts.empty? ? nil : contacts 
+    end
+
+    def destroy (contact)
+      @@conn.exec_params('DELETE FROM contacts WHERE id = $1::int',[contact[0].id.to_i]) 
+    end
 
   end
-
 end

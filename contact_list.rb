@@ -30,7 +30,7 @@ class ContactList
       end
     end
 
-    def create_contact
+    def get_contact_info
       
       contact = {}
 
@@ -47,28 +47,54 @@ class ContactList
     def run_command
       case ARGV[0].downcase
       when 'new'
-        
-        puts "Create a new contact"
-        contact = create_contact
+        contact = get_user_info
         Contact.create(contact[:name], contact[:email])
         
       when 'list'
         puts "List all the the contacts"
         list_contacts(Contact.all)
       when 'show'
-        contact = Contact.find(ARGV[1].to_i)
-        if !contact.nil?
-          list_contacts([Contact.new(contact[0], contact[1],contact[2])])
-        else
-          puts "Contact could not be found"
+        if contact = Contact.find(ARGV[1].to_i)
+          list_contacts(contact)
+        else  
+          puts "Contact could not be found: please provide a valid id"
         end
+        
       when 'search'
-        puts "search contacts"
-        list_contacts(Contact.search(ARGV[1]))
-      end
-    end
-  end
-end
+        contact = Contact.search(ARGV[1])
+        if contact 
+          list_contacts(contact)
+        else
+          puts "Your search did not match any records"
+        end
+
+      when 'update'
+        if contact = Contact.find(ARGV[1].to_i)
+          puts "Here's the contact that will be updated"
+          list_contacts(contact)
+          puts "Please, enter the new contact information"
+          puts
+          contact_info = get_contact_info
+          Contact.update(contact, contact_info[:name], contact_info[:email])
+        else
+          puts "That contact cannot be found. A new contact will be created"
+          contact_info = get_contact_info
+          Contact.create(contact[:name], contact[:email])
+        end
+
+      when 'destroy'
+        if contact = Contact.find(ARGV[1].to_i)
+          Contact.destroy(contact)
+        else
+          puts "The contact is not in the contact list"
+        end
+      #end
+
+      end 
+    
+    end 
+  end 
+end 
 
 ContactList.run_command if ContactList.check_arguments
 
